@@ -1,1 +1,382 @@
 # Aztec-node-guide-iziedking
+# Aztec Execution & Consensus Node Setup Upgraded Guide with Geth and Prysm
+
+> **Full Setup from Scratch with Explanations for Beginners**
+
+---
+
+##  Step 1: System Requirements
+
+### Minimum Specs for Sequencer
+
+| Spec       | Minimum (Testnet) | Recommended |
+|------------|-------------------|-------------|
+| CPU        | 4 cores            | 6+ cores    |
+| RAM        | 8 GB               | 16 GB       |
+| Disk       | 500 GB SSD         | 1 TB SSD |
+| OS         | Ubuntu 20.04/22.04 or WSL2 on Windows |
+
+ **If you have proper electricity and a robust device with the requirement above you can as well run this for free otherwise use a VPS**
+
+### Recommended VPS Providers
+
+* [Hetzner](https://www.hetzner.com)
+* [Contabo](https://contabo.com)
+* [DigitalOcean](https://www.digitalocean.com)
+* [Racknerd](https://racknerd.com) 
+
+* Choose a VPS with **at least:**
+  * **4+ CPU Cores**
+  * **16GB RAM**
+  * **1TB SSD/NVMe**
+  * **25 Mbps up/down bandwidth**
+
+---
+![Screenshot 2025-05-23 083138](https://github.com/user-attachments/assets/d635811d-5aa3-4861-846d-ec2984dcda0b)
+![Screenshot 2025-05-23 083305](https://github.com/user-attachments/assets/34ca9ce4-8030-4c65-b5a6-b30da04ce1cb)
+![Screenshot 2025-05-23 083341](https://github.com/user-attachments/assets/a450f64b-8cd5-4dde-995b-44b83c3795e4)
+![Screenshot 2025-05-23 083405](https://github.com/user-attachments/assets/6510b992-d3c0-402b-bda7-7ac98fd4b302)
+
+Choose a password you won't forget!
+After first purchase go back to your accounct and make second purchase via an upgrade to get required specs follow the Image guide 
+---
+![Screenshot 2025-05-23 084416](https://github.com/user-attachments/assets/e1bb0c20-ef93-4076-afc0-4b8569bfe8c4)
+![Screenshot 2025-05-23 084357](https://github.com/user-attachments/assets/743b2c9b-f5fb-48d9-a959-3fa42a668fb0)
+![Screenshot 2025-05-23 084450](https://github.com/user-attachments/assets/f46664f6-b6d7-4fc2-8bb2-e843961a6a9f)
+![Screenshot 2025-05-23 084541](https://github.com/user-attachments/assets/5778c91d-0751-4a11-ada2-d506c68d65c4)
+
+---
+* Once you successfully purchase a VPS:
+  1. Download [Termius](https://termius.com/download/windows)
+  2. watch this video here to learn how to set it up with termius with your VPS [Video](https://t.me/crypto_circuitN/1381) (Credit to AirdropAnalyst for video)
+ 
+> Note if you are using your System for this ensure to install WSL windows subsystems and Docker Desktop (Need guide in setting this up? reach out to me. VPS strongly recommended)
+
+---
+
+##  Step 2: Install Essential Dependencies
+
+```bash
+sudo apt-get update && sudo apt-get upgrade -y
+sudo apt install curl iptables build-essential git wget lz4 jq make gcc nano automake autoconf tmux htop nvme-cli libgbm1 pkg-config libssl-dev libleveldb-dev tar clang bsdmainutils ncdu unzip screen -y
+```
+
+* Updates system packages and installs everything needed to compile, monitor, and run Ethereum clients.
+
+---
+
+##  Step 3: Install Docker & Add User to Docker Group
+
+```bash
+source <(wget -O - https://raw.githubusercontent.com/Iziedking/installer/main/docker.sh)
+sudo groupadd docker && sudo usermod -aG docker $(whoami)
+newgrp docker
+```
+
+* This sets up Docker so we can run the Aztec sequencer in a container.
+
+---
+
+##  Step 4: Activate Firewall & Open Required Ports
+
+Run the following commands:
+
+```bash
+sudo ufw allow 8545/tcp    
+sudo ufw allow 30303/tcp   
+sudo ufw allow 30303/udp   
+sudo ufw allow 3500/tcp    
+sudo ufw allow 4000/tcp    
+sudo ufw allow 12000/udp  
+sudo ufw allow 13000/tcp   
+sudo ufw allow 8082/tcp 
+sudo ufw allow 8081/tcp   
+sudo ufw allow 22/tcp
+sudo ufw allow 443/tcp     
+sudo ufw enable
+```
+
+>  **Tip**: If any port above is already used when you try to run step 10 or blocked by your VPS provider, consider changing the Aztec port (e.g., from `8082` to `8181`) by modifying the `--port` flag in your `aztec start` command see Image.
+
+To find an available port:
+
+```bash
+sudo lsof -i -P -n | grep LISTEN
+```
+
+This will show currently used ports so you can pick a free one.
+
+![Screenshot 2025-05-23 092218](https://github.com/user-attachments/assets/f68972a2-6d83-4952-a8f2-0013a690fc58)
+
+
+---
+
+##  Step 5: Setup Geth + Prysm Users & JWT Secret
+
+```bash
+# Add users
+sudo adduser --home /home/geth --disabled-password --gecos 'Geth Client' geth
+sudo adduser --home /home/beacon --disabled-password --gecos 'Prysm Beacon Client' beacon
+
+# Add eth group
+sudo groupadd eth
+sudo usermod -a -G eth geth
+sudo usermod -a -G eth beacon
+
+# Create JWT secret
+sudo mkdir -p /var/lib/secrets
+sudo chgrp -R eth /var/lib/ /var/lib/secrets
+sudo chmod 750 /var/lib/ /var/lib/secrets
+sudo openssl rand -hex 32 | tr -d '\n' | sudo tee /var/lib/secrets/jwt.hex > /dev/null
+sudo chown root:eth /var/lib/secrets/jwt.hex
+sudo chmod 640 /var/lib/secrets/jwt.hex
+```
+
+ **JWT secret** is required for communication between execution (Geth) and consensus (Beacon) layers.
+
+---
+
+##  Step 6: Setup Data Directories
+
+```bash
+sudo -u geth mkdir /home/geth/geth
+sudo -u beacon mkdir /home/beacon/beacon
+```
+
+---
+
+##  Step 7: Install Geth (Execution Client)
+
+```bash
+sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt-get update
+sudo apt-get install ethereum -y
+
+wget https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.15.11-36b2371c.tar.gz
+tar -xvf geth-linux-amd64-1.15.11-36b2371c.tar.gz
+sudo mv geth-linux-amd64-1.15.11-36b2371c/geth /usr/bin/geth
+```
+
+---
+
+##  Step 8: Create & Start Geth Systemd Service
+
+```bash
+sudo nano /etc/systemd/system/geth.service
+```
+
+**Insert the following:**
+
+```
+[Unit]
+Description=Geth
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+User=geth
+WorkingDirectory=/home/geth
+ExecStart=/usr/bin/geth \
+  --sepolia \
+  --http \
+  --http.addr "0.0.0.0" \
+  --http.port 8545 \
+  --http.api "eth,net,engine,admin" \
+  --authrpc.addr "127.0.0.1" --authrpc.port 8551 \
+  --http.corsdomain "*" \
+  --http.vhosts "*" \
+  --datadir /home/geth/geth \
+  --authrpc.jwtsecret /var/lib/secrets/jwt.hex
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start geth
+sudo systemctl enable geth
+sudo journalctl -fu geth  # View logs
+```
+
+---
+
+##  Step 9: Install & Run Prysm (Consensus Client)
+
+```bash
+sudo -u beacon mkdir /home/beacon/bin
+sudo -u beacon curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh -o /home/beacon/bin/prysm.sh
+sudo -u beacon chmod +x /home/beacon/bin/prysm.sh
+```
+
+```bash
+sudo nano /etc/systemd/system/beacon.service
+```
+
+**Insert the following:**
+
+```
+[Unit]
+Description=Prysm Beacon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+User=beacon
+ExecStart=/home/beacon/bin/prysm.sh beacon-chain \
+  --sepolia \
+  --http-modules=beacon,config,node,validator \
+  --rpc-host=0.0.0.0 --rpc-port=4000 \
+  --grpc-gateway-host=0.0.0.0 --grpc-gateway-port=3500 \
+  --datadir /home/beacon/beacon \
+  --execution-endpoint=http://127.0.0.1:8551 \
+  --jwt-secret=/var/lib/secrets/jwt.hex \
+  --checkpoint-sync-url=https://checkpoint-sync.sepolia.ethpandaops.io/ \
+  --genesis-beacon-api-url=https://checkpoint-sync.sepolia.ethpandaops.io/ \
+  --accept-terms-of-use
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start beacon
+sudo systemctl enable beacon
+sudo journalctl -fu beacon  # View logs
+```
+
+ **Let Geth & Beacon fully sync before proceeding may take up to a day but check at hourly intervals mine completed in 2 hours.**
+
+---
+
+##  Step 10: Sync Check Script
+
+```bash
+nano sync.sh
+```
+
+```bash
+#!/bin/bash
+echo "=== GETH SYNC STATUS ==="
+curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' -H "Content-Type: application/json" http://localhost:8545 | jq
+echo "\n=== BEACON SYNC STATUS ==="
+curl -s http://localhost:3500/eth/v1/node/syncing | jq
+```
+
+```bash
+chmod +x sync.sh
+./sync.sh
+```
+> **You can leave terminal and always come back to check synv with ./sync.sh**
+---
+
+* If they are in sync you will get something like this:
+  
+  ![image](https://github.com/user-attachments/assets/6184fa76-674c-436e-9ada-9b7148f7c028)
+
+* Then you can proceed to step 11
+
+---
+
+##  Step 11: Run Aztec Sequencer in Docker with `screen`
+
+```bash
+screen -S aztec-sequencer
+```
+
+```bash
+aztec start --node --archiver --sequencer \
+  --network alpha-testnet \
+  --l1-rpc-urls RPC_URL  \
+  --l1-consensus-host-urls CONSENSUS_HOST_URL \
+  --sequencer.validatorPrivateKey 0xPrivateKey \
+  --sequencer.coinbase 0xPublicAddress \
+  --p2p.p2pIp IP \
+  --port 8081 
+```
+* Change RPC_URL with:
+```bash
+http://Your_VPS_IP:8545
+```
+* Change CONSENSUS_HOST_URL with:
+```bash
+http://Your_VPS_IP:3500
+```
+* Change IP to:
+```bash
+Your_VPS_IP
+```
+
+> Press `Ctrl+A` then `D` to detach the screen safely.
+
+###  Check logs anytime:
+
+```bash
+screen -r aztec-sequencer
+```
+
+---
+
+##  Step 12: Stop & Restart Sequencer
+
+```bash
+# Find container
+docker ps
+
+# Stop container
+docker stop <container_id>
+
+# Restart manually (inside screen)
+screen -S aztec-sequencer
+aztec start ... # (same command in step 10)
+```
+
+---
+
+##  Optional: Remove Everything if need arise
+
+```bash
+# Stop services
+sudo systemctl stop geth.service
+sudo systemctl stop beacon.service
+
+# Disable services
+sudo systemctl disable geth.service
+sudo systemctl disable beacon.service
+
+# Remove services
+sudo rm /etc/systemd/system/geth.service
+sudo rm /etc/systemd/system/beacon.service
+
+# Delete data
+sudo rm -rf /home/geth /home/beacon
+
+# Stop All Running Docker Containers
+docker stop $(docker ps -q)
+
+# Remove All Docker Containers, Images, Volumes, and Networks
+docker system prune -a --volumes -f
+
+```
+
+---
+**If your Node is running, You should get something like this:**
+
+![image](https://github.com/user-attachments/assets/c445a5ee-2ccd-4806-823a-ab26d9065915)
+
+---
+
+##  Guide by: **@Iziedking**
+
+> Reach me at: \[Telegram: @Izie17 X: [Twitter Profile](https://x.com/Iziedking) ]
+
+---
+
+
