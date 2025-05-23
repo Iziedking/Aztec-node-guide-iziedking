@@ -17,6 +17,9 @@
 | OS         | Ubuntu 20.04/22.04 or WSL2 on Windows |
 
  **If you have proper electricity and a robust device with the requirement above you can as well run this for free otherwise use a VPS**
+ 
+* Create a new metamask wallet for this, save your seed phrase securely get your private keys and public address for the node 
+* If you are already running node before delete all the data see below these guides all remove commands (reach out to me if you have any errors) and start afresh with this 
 
 ### Recommended VPS Providers
 
@@ -372,9 +375,65 @@ docker system prune -a --volumes -f
 ![image](https://github.com/user-attachments/assets/c445a5ee-2ccd-4806-823a-ab26d9065915)
 
 ---
+# Final step:
+
+* head to aztec Discord [here](https://discord.gg/aztec)
+* Check `#operators` and `#node-support` channels
+* Use `/operator start` command in Discord to register.
+
+  Submit:
+  1. Address you used for the node
+  2. Block_Number
+  3. Proof
+     
+![succint (59 4 x 42 cm) (59 x 38 cm) (50 x 35 cm) (39 x 30 cm)](https://github.com/user-attachments/assets/6b736bce-6e67-4a19-b421-0b4c4fde3b1c)
+
+* To get your Block_number and Proof
+  RUn this command:
+  Get latest proven block:
+
+  ```bash
+  curl -s -X POST -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"node_getL2Tips","params":[],"id":67}' \
+  http://localhost:8082
+  ```
+
+ > Note: use the port your node is running on from your command in step 10 
+ 
+  Generate sync proof:
+  
+  ```bash
+  curl -s -X POST -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"node_getArchiveSiblingPath","params":["block_number","block_number"],"id":67}' \
+  http://localhost:8082 | jq
+  ```
+
+> Note: change "block_number to latest Proven Block_Number see Image
+
+  Below is an Image of a block_number you'd get and how to use it to generate a proof
+
+  ![Screenshot 2025-05-23 102928](https://github.com/user-attachments/assets/ed025b8a-0761-427b-bedd-d5e2b9513c4a)
+
+
+---
+
+  * For guadian role:
+     Maintain node uptime then use your VPS or Local System IP and wallet address you used for the node to check at intervals (maybe daily) if you are whitelisted
+
+    ![Screenshot 2025-05-23 105309](https://github.com/user-attachments/assets/959158ab-ba8c-4220-b230-6d8ce98407ef)
+
+      * head to aztec Discord [here](https://discord.gg/aztec)
+      * Check `#operators` and `#node-support` channels
+      * Use `/checkip` command in Discord to register.
+
+     ![Screenshot 2025-05-23 104951](https://github.com/user-attachments/assets/301a11fd-3586-4116-808e-96b7d50c6759)
+
+    
+---
 
 ##  Guide by: **@Iziedking**
 
+> This guide helps you run the node enough to get apprentice and guardian roles
 > Reach me at: \[Telegram: @Izie17 X: [Twitter Profile](https://x.com/Iziedking) ]
 
 ---
