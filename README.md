@@ -71,9 +71,22 @@ sudo apt install curl iptables build-essential git wget lz4 jq make gcc nano aut
 ##  Step 3: Install Docker & Add User to Docker Group
 
 ```bash
-source <(wget -O - https://raw.githubusercontent.com/Iziedking/installer/main/docker.sh)
-sudo groupadd docker && sudo usermod -aG docker $(whoami)
-newgrp docker
+source <(wget -O - https://raw.githubusercontent.com/frianowzki/installer/main/docker.sh)
+```
+```bash
+sudo groupadd docker && sudo usermod -aG docker $(whoami) && newgrp docker
+```
+```bash
+bash -i <(curl -s https://install.aztec.network)
+```
+```bash
+echo 'export PATH=$PATH:/root/.aztec/bin' >> ~/.bashrc
+```
+```bash
+source ~/.bashrc
+```
+```bash
+aztec-up alpha-testnet
 ```
 
 * This sets up Docker so we can run the Aztec sequencer in a container.
