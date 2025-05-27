@@ -301,7 +301,7 @@ chmod +x sync.sh
 
 ---
 
-##  Step 11: Run Aztec Sequencer in Docker with `screen`
+##  Step 11: Run Aztec Sequencer with `screen`
 
 ```bash
 screen -S aztec-sequencer
@@ -442,6 +442,117 @@ docker system prune -a --volumes -f
      ![Screenshot 2025-05-23 104951](https://github.com/user-attachments/assets/301a11fd-3586-4116-808e-96b7d50c6759)
 
     
+---
+
+
+
+
+
+
+
+
+# Using Docker Compose (Most Recomended to have a clean run)
+
+ * After step 10, your Geth and Prysm block should be in Sync
+  * Create a .env to save your sensitive infomation 
+  ```bash
+  nano .env
+  ```
+  * paste this and replace
+    
+     your_aztec_private_key_here with your private key
+    
+     your_VPS_IP with correct IP
+    
+  
+  ```bash
+  VALIDATOR_PRIVATE_KEY=your_aztec_private_key_here
+  P2P_IP=your_VPS_IP
+  ETHEREUM_HOSTS=http://Your_VPS_IP:8545
+  L1_CONSENSUS_HOST_URLS=http://Your_VPS_IP:3500
+  BOOTNODES=/dns4/bootnode.aztec.network/tcp/40400/p2p/16Uiu2HAmExampleBootNodeID
+  ```
+  > Press `Ctrl+O` then Enter to save; then `Ctrl+X` to exit.
+  
+  * Create a docker-compose.yml file 
+  ```bash
+  nano docker-compose.yml
+  ```
+
+  * Paste this command 
+  ```bash
+  version: "3.8"
+
+  services:
+    aztec-sequencer:
+      container_name: aztec-sequencer
+      image: aztecprotocol/aztec:alpha-testnet
+      restart: unless-stopped
+      ports:
+        - "8080:8080"
+        - "40400:40400/tcp"
+        - "40400:40400/udp"
+      volumes:
+        - /root/.aztec:/data   
+      environment:
+        DATA_DIRECTORY: /data
+        VALIDATOR_PRIVATE_KEY: ${VALIDATOR_PRIVATE_KEY}
+        P2P_IP: ${P2P_IP}
+        ETHEREUM_HOSTS: ${ETHEREUM_HOSTS}
+        L1_CONSENSUS_HOST_URLS: ${L1_CONSENSUS_HOST_URLS}
+        BOOTNODES: ${BOOTNODES}
+        LOG_LEVEL: info
+      entrypoint: >
+        sh -c "node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start 
+        --network alpha-testnet 
+        --node 
+        --archiver 
+        --sequencer 
+        --sequencer.governanceProposerPayload 0x54F7fe24E349993b363A5Fa1bccdAe2589D5E5Ef"
+  ```
+  > Press `Ctrl+O` then Enter to save; then `Ctrl+X` to exit.
+---
+
+### Monitor node with Screen
+```bash
+screen -S aztec-sequencer
+```
+* Run this command
+* Start the Aztec Sequencer
+```bash
+docker compose up -d
+```
+* To view Logs
+```bash
+docker logs -f aztec-sequencer
+```
+> Press `Ctrl+A` then `D` to detach the screen safely.
+
+###  Check logs anytime:
+
+```bash
+screen -r aztec-sequencer
+```
+---
+## In cases of any Issue or adjustments
+* Check Logs
+```bash
+screen -r aztec-sequencer
+```
+* Restart, Stop, or Update
+  * Stop the node:
+  ```bash
+  docker compose down
+  ```
+  * Rebuild with latest image:
+  ```bash
+  docker compose pull
+  docker compose up -d 
+  ```
+  
+
+
+
 ---
 
 ##  Guide by: **@Iziedking**
