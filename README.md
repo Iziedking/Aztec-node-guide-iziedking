@@ -128,23 +128,34 @@ This will show currently used ports so you can pick a free one.
 ---
 
 ##  Step 5: Setup Geth + Prysm Users & JWT Secret
-
+* Add users
 ```bash
-# Add users
 sudo adduser --home /home/geth --disabled-password --gecos 'Geth Client' geth
 sudo adduser --home /home/beacon --disabled-password --gecos 'Prysm Beacon Client' beacon
-
-# Add eth group
+```
+* Add eth group
+```bash
 sudo groupadd eth
 sudo usermod -a -G eth geth
 sudo usermod -a -G eth beacon
-
-# Create JWT secret
+```
+* Create JWT secret
+```bash
 sudo mkdir -p /var/lib/secrets
+```
+```bash
 sudo chgrp -R eth /var/lib/ /var/lib/secrets
+```
+```bash
 sudo chmod 750 /var/lib/ /var/lib/secrets
+```
+```bash
 sudo openssl rand -hex 32 | tr -d '\n' | sudo tee /var/lib/secrets/jwt.hex > /dev/null
+```
+```bash
 sudo chown root:eth /var/lib/secrets/jwt.hex
+```
+```bash
 sudo chmod 640 /var/lib/secrets/jwt.hex
 ```
 
@@ -357,27 +368,31 @@ aztec start ... # (same command in step 10)
 ---
 
 ##  Optional: Remove Everything if need arise
-
+* Stop services
 ```bash
-# Stop services
 sudo systemctl stop geth.service
 sudo systemctl stop beacon.service
-
-# Disable services
+```
+* Disable services
+```bash
 sudo systemctl disable geth.service
 sudo systemctl disable beacon.service
-
-# Remove services
+```
+* Remove services
+```bash
 sudo rm /etc/systemd/system/geth.service
 sudo rm /etc/systemd/system/beacon.service
-
-# Delete data
+```
+* Delete data
+```bash
 sudo rm -rf /home/geth /home/beacon
-
-# Stop All Running Docker Containers
+```
+* Stop All Running Docker Containers
+```bash
 docker stop $(docker ps -q)
-
-# Remove All Docker Containers, Images, Volumes, and Networks
+```
+* Remove All Docker Containers, Images, Volumes, and Networks
+```bash
 docker system prune -a --volumes -f
 
 ```
