@@ -496,7 +496,7 @@ docker system prune -a --volumes -f
   P2P_IP=your_VPS_IP
   ETHEREUM_HOSTS=http://Your_VPS_IP:8545
   L1_CONSENSUS_HOST_URLS=http://Your_VPS_IP:3500
-  BOOTNODES=/dns4/bootnode.aztec.network/tcp/40400/p2p/16Uiu2HAmExampleBootNodeID
+  BOOTNODES=/dns4/bootstrap.aztec.network/tcp/40400/p2p/16Uiu2HAmGx3fJeMLUcsBNagjsT2SxnD97vVaMXChn7UynKtNQfA
   ```
   > Press `Ctrl+O` then Enter to save; then `Ctrl+X` to exit.
   
