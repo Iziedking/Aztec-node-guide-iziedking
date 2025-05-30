@@ -178,11 +178,19 @@ sudo -u beacon mkdir /home/beacon/beacon
 sudo add-apt-repository -y ppa:ethereum/ethereum
 sudo apt-get update
 sudo apt-get install ethereum -y
+```
 
+```bash
 wget https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.15.11-36b2371c.tar.gz
+
+```bash
 tar -xvf geth-linux-amd64-1.15.11-36b2371c.tar.gz
+```
+
+```bash
 sudo mv geth-linux-amd64-1.15.11-36b2371c/geth /usr/bin/geth
 ```
+
 
 ---
 
@@ -247,6 +255,7 @@ sudo nano /etc/systemd/system/beacon.service
 
 ```
 [Unit]
+
 Description=Prysm Beacon
 After=network-online.target
 Wants=network-online.target
@@ -299,6 +308,8 @@ curl -s http://localhost:3500/eth/v1/node/syncing | jq
 
 ```bash
 chmod +x sync.sh
+```
+```bash
 ./sync.sh
 ```
 > **You can leave terminal and always come back to check synv with ./sync.sh**
